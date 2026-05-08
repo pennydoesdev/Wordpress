@@ -42,7 +42,7 @@ jobs:
         run: find themes/${{ env.THEME_SLUG }} -name "*.php" -exec php -l {} \; | grep -v "No syntax errors"
         continue-on-error: false
 
-  # ── 2. Build ZIPs ─────────────────────────────────────────────────────────
+  # ── 2. Build — stage for WP.com + produce versioned ZIPs ─────────────────
   build:
     name: Build Packages
     runs-on: ubuntu-latest
@@ -65,6 +65,23 @@ jobs:
                 | grep -oP "[0-9]+\.[0-9]+\.[0-9]+")
           echo "version=$VER" >> $GITHUB_OUTPUT
 
+      # ── Stage for WordPress.com ──────────────────────────────────────────
+      # WP.com Advanced mode downloads the artifact named "wpcom" and unpacks
+      # it into wp-content/. Mirror that structure here.
+      - name: Stage wpcom artifact
+        run: |
+          mkdir -p wpcom/plugins wpcom/themes
+          cp -r plugins/${{ env.PLUGIN_SLUG }} wpcom/plugins/
+          cp -r themes/${{ env.THEME_SLUG }}   wpcom/themes/
+
+      - name: Upload wpcom artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wpcom
+          path: wpcom/
+          retention-days: 7
+
+      # ── Versioned ZIPs (kept for releases / manual installs) ─────────────
       - name: Zip plugin
         run: |
           cd plugins
@@ -77,7 +94,7 @@ jobs:
           zip -r ../vicinity-theme-v${{ steps.theme_ver.outputs.version }}.zip \
             ${{ env.THEME_SLUG }}/ -x "*.DS_Store" "*.git*"
 
-      - name: Upload ZIPs as artifacts
+      - name: Upload versioned ZIPs
         uses: actions/upload-artifact@v4
         with:
           name: vicinity-packages-v${{ steps.plugin_ver.outputs.version }}
@@ -87,9 +104,8 @@ jobs:
           retention-days: 30
 
   # ── 3. Deploy via WordPress.com GitHub Integration ────────────────────────
-  # This job notifies WordPress.com to pull the latest commit.
   # Requires the repo to be connected in:
-  #   WP.com Dashboard → Hosting → GitHub Deployments
+  #   WP.com Dashboard → Hosting → GitHub Deployments (Advanced mode)
   # ─────────────────────────────────────────────────────────────────────────
   deploy:
     name: Trigger WP.com Deployment
@@ -125,6 +141,7 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
+          name: vicinity-packages-v${{ needs.build.outputs.plugin_ver }}
           merge-multiple: true
 
       - name: Create Release
