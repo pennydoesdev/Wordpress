@@ -1,0 +1,138 @@
+name: Deploy to WordPress.com
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Triggers
+# ─────────────────────────────────────────────────────────────────────────────
+on:
+  push:
+    branches:
+      - main          # Auto-deploy on every merge to main
+  workflow_dispatch:  # Allow manual deploys from the Actions tab
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Environment — set WPCOM_SITE to your WordPress.com site slug
+# All secrets are stored in: GitHub repo → Settings → Secrets → Actions
+# ─────────────────────────────────────────────────────────────────────────────
+env:
+  PLUGIN_SLUG: apollo-plugin
+  THEME_SLUG:  apollo-theme
+  WPCOM_SITE:  ${{ secrets.WPCOM_SITE_SLUG }}   # e.g. pennytribune
+
+jobs:
+
+  # ── 1. Lint ────────────────────────────────────────────────────────────────
+  lint:
+    name: PHP Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: php-cs-fixer
+
+      - name: Check syntax — plugin
+        run: find plugins/${{ env.PLUGIN_SLUG }} -name "*.php" -exec php -l {} \; | grep -v "No syntax errors"
+        continue-on-error: false
+
+      - name: Check syntax — theme
+        run: find themes/${{ env.THEME_SLUG }} -name "*.php" -exec php -l {} \; | grep -v "No syntax errors"
+        continue-on-error: false
+
+  # ── 2. Build ZIPs ─────────────────────────────────────────────────────────
+  build:
+    name: Build Packages
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read plugin version
+        id: plugin_ver
+        run: |
+          VER=$(grep "define( 'APOLLO_VERSION'" plugins/${{ env.PLUGIN_SLUG }}/apollo-plugin.php \
+                | grep -oP "'\K[0-9]+\.[0-9]+\.[0-9]+")
+          echo "version=$VER" >> $GITHUB_OUTPUT
+
+      - name: Read theme version
+        id: theme_ver
+        run: |
+          VER=$(grep "^Version:" themes/${{ env.THEME_SLUG }}/style.css \
+                | grep -oP "[0-9]+\.[0-9]+\.[0-9]+")
+          echo "version=$VER" >> $GITHUB_OUTPUT
+
+      - name: Zip plugin
+        run: |
+          cd plugins
+          zip -r ../vicinity-plugin-v${{ steps.plugin_ver.outputs.version }}.zip \
+            ${{ env.PLUGIN_SLUG }}/ -x "*.DS_Store" "*.git*"
+
+      - name: Zip theme
+        run: |
+          cd themes
+          zip -r ../vicinity-theme-v${{ steps.theme_ver.outputs.version }}.zip \
+            ${{ env.THEME_SLUG }}/ -x "*.DS_Store" "*.git*"
+
+      - name: Upload ZIPs as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: vicinity-packages-v${{ steps.plugin_ver.outputs.version }}
+          path: |
+            vicinity-plugin-v*.zip
+            vicinity-theme-v*.zip
+          retention-days: 30
+
+  # ── 3. Deploy via WordPress.com GitHub Integration ────────────────────────
+  # This job notifies WordPress.com to pull the latest commit.
+  # Requires the repo to be connected in:
+  #   WP.com Dashboard → Hosting → GitHub Deployments
+  # ─────────────────────────────────────────────────────────────────────────
+  deploy:
+    name: Trigger WP.com Deployment
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Trigger WordPress.com deployment
+        run: |
+          curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.WPCOM_OAUTH_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            "https://public-api.wordpress.com/wpcom/v2/sites/${{ env.WPCOM_SITE }}/hosting/github-deployments/deploy" \
+            -d '{"ref":"main"}' \
+            | tee /tmp/deploy_response.json
+
+          STATUS=$(cat /tmp/deploy_response.json | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','unknown'))" 2>/dev/null || echo "sent")
+          echo "Deploy status: $STATUS"
+
+  # ── 4. Create GitHub Release on version tag ───────────────────────────────
+  # Push a tag like v3.1.0 to trigger a release with ZIPs attached.
+  release:
+    name: GitHub Release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            vicinity-plugin-v*.zip
+            vicinity-theme-v*.zip
+          generate_release_notes: true
+          draft: false
+          prerelease: false
