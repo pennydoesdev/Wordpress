@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 240" fill="none">
+  <title>Vicinity</title>
+
+  <!-- ── Map tile background ── -->
+  <rect width="200" height="195" fill="#fff"/>
+  <rect width="200" height="195" fill="none" stroke="#000" stroke-width="2"/>
+
+  <!-- ══ Street grid — irregular to feel like a real city map ══ -->
+
+  <!-- Major horizontal roads -->
+  <line x1="0"   y1="62"  x2="200" y2="58"  stroke="#000" stroke-width="5"/>
+  <line x1="0"   y1="120" x2="200" y2="124" stroke="#000" stroke-width="3.5"/>
+  <line x1="0"   y1="163" x2="200" y2="159" stroke="#000" stroke-width="5"/>
+
+  <!-- Minor horizontal roads -->
+  <line x1="0"   y1="38"  x2="106" y2="36"  stroke="#000" stroke-width="2"/>
+  <line x1="0"   y1="88"  x2="200" y2="91"  stroke="#000" stroke-width="2"/>
+  <line x1="118" y1="142" x2="200" y2="140" stroke="#000" stroke-width="2"/>
+  <line x1="0"   y1="183" x2="200" y2="181" stroke="#000" stroke-width="2"/>
+
+  <!-- Major vertical roads -->
+  <line x1="52"  y1="0"   x2="50"  y2="195" stroke="#000" stroke-width="5"/>
+  <line x1="112" y1="0"   x2="114" y2="195" stroke="#000" stroke-width="3.5"/>
+  <line x1="160" y1="0"   x2="158" y2="195" stroke="#000" stroke-width="5"/>
+
+  <!-- Minor vertical roads -->
+  <line x1="28"  y1="0"   x2="29"  y2="60"  stroke="#000" stroke-width="2"/>
+  <line x1="82"  y1="62"  x2="80"  y2="195" stroke="#000" stroke-width="2"/>
+  <line x1="136" y1="0"   x2="135" y2="120" stroke="#000" stroke-width="2"/>
+  <line x1="178" y1="62"  x2="177" y2="163" stroke="#000" stroke-width="2"/>
+
+  <!-- Diagonal / angled street — feels organic -->
+  <line x1="0"   y1="145" x2="52"  y2="120" stroke="#000" stroke-width="2.5"/>
+  <line x1="114" y1="91"  x2="160" y2="62"  stroke="#000" stroke-width="2"/>
+
+  <!-- ══ City blocks — solid black fills ══ -->
+  <!-- Top-left cluster -->
+  <rect x="3"   y="3"   width="24"  height="33" fill="#111"/>
+  <rect x="31"  y="3"   width="18"  height="33" fill="#000"/>
+  <rect x="3"   y="40"  width="45"  height="19" fill="#333"/>
+
+  <!-- Top-center -->
+  <rect x="54"  y="3"   width="55"  height="31" fill="#000"/>
+  <rect x="84"  y="38"  width="26"  height="21" fill="#222"/>
+  <rect x="54"  y="66"  width="24"  height="21" fill="#111"/>
+
+  <!-- Top-right -->
+  <rect x="116" y="3"   width="17"  height="55" fill="#333"/>
+  <rect x="138" y="3"   width="19"  height="55" fill="#000"/>
+  <rect x="162" y="3"   width="35"  height="55" fill="#111"/>
+
+  <!-- Middle-left -->
+  <rect x="3"   y="94"  width="45"  height="23" fill="#222"/>
+  <rect x="3"   y="126" x2="45"  height="34" fill="#000"/>
+  <rect x="3"   y="126" width="45"  height="34" fill="#000"/>
+
+  <!-- Middle-center cluster -->
+  <rect x="84"  y="95"  width="27"  height="22" fill="#333"/>
+  <rect x="116" y="94"  width="17"  height="23" fill="#111"/>
+  <rect x="54"  y="127" width="24"  height="33" fill="#222"/>
+  <rect x="84"  y="127" width="27"  height="11" fill="#000"/>
+  <rect x="116" y="127" width="39"  height="11" fill="#333"/>
+
+  <!-- Right strip -->
+  <rect x="162" y="67"  width="35"  height="20" fill="#222"/>
+  <rect x="162" y="94"  width="35"  height="63" fill="#111"/>
+
+  <!-- Bottom band -->
+  <rect x="3"   y="165" width="45"  height="16" fill="#333"/>
+  <rect x="54"  y="165" width="56"  height="16" fill="#000"/>
+  <rect x="116" y="165" width="79"  height="16" fill="#222"/>
+  <rect x="3"   y="185" width="153" height="7"  fill="#111"/>
+  <rect x="162" y="165" width="35"  height="27" fill="#333"/>
+
+  <!-- ══ Location pin — off-centre at ~62%, 37% ══ -->
+  <!-- Pin body (teardrop) -->
+  <path d="M124 22 C110 22 100 33 100 46 C100 63 124 86 124 86 C124 86 148 63 148 46 C148 33 138 22 124 22 Z"
+        fill="#000" stroke="#fff" stroke-width="2"/>
+  <!-- Pin inner circle (white cutout) -->
+  <circle cx="124" cy="46" r="10" fill="#fff"/>
+
+  <!-- ══ Wordmark ══ -->
+  <text x="100" y="220"
+        font-family="'Zilla Slab','Georgia','Times New Roman',serif"
+        font-size="26"
+        font-weight="700"
+        letter-spacing="5"
+        text-anchor="middle"
+        fill="#000">VICINITY</text>
+</svg>
