@@ -46,7 +46,8 @@ add_action( 'wp_ajax_vicinity_video_mpu_init', static function (): void {
 	$backend = get_option( 'vicinity_storage_video', 'r2' );
 
 	if ( $backend === 's3' && vicinity_s3_ready() ) {
-		return vicinity_video_mpu_init_s3( $key, $content_type, $file_size, $post_id );
+		vicinity_video_mpu_init_s3( $key, $content_type, $file_size, $post_id );
+		return;
 	}
 
 	if ( ! vicinity_r2_video_ready() ) {
