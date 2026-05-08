@@ -6,17 +6,13 @@ name: Deploy to WordPress.com
 on:
   push:
     branches:
-      - main          # Auto-deploy on every merge to main
-  workflow_dispatch:  # Allow manual deploys from the Actions tab
+      - main
+  workflow_dispatch:
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Environment — set WPCOM_SITE to your WordPress.com site slug
-# All secrets are stored in: GitHub repo → Settings → Secrets → Actions
-# ─────────────────────────────────────────────────────────────────────────────
 env:
   PLUGIN_SLUG: vicinity-plugin
   THEME_SLUG:  vicinity-theme
-  WPCOM_SITE:  ${{ secrets.WPCOM_SITE_SLUG }}   # e.g. pennytribune
+  WPCOM_SITE:  ${{ secrets.WPCOM_SITE_SLUG }}
 
 jobs:
 
@@ -32,21 +28,45 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          tools: php-cs-fixer
 
       - name: Check syntax — plugin
-        run: find plugins/${{ env.PLUGIN_SLUG }} -name "*.php" -exec php -l {} \; | grep -v "No syntax errors"
-        continue-on-error: false
+        run: |
+          ERRORS=0
+          while IFS= read -r file; do
+            if ! php -l "$file" > /dev/null 2>&1; then
+              php -l "$file"
+              ERRORS=$((ERRORS + 1))
+            fi
+          done < <(find plugins/${{ env.PLUGIN_SLUG }} -name "*.php")
+          if [ $ERRORS -gt 0 ]; then
+            echo "::error::$ERRORS PHP syntax error(s) found in plugin"
+            exit 1
+          fi
+          echo "Plugin: all PHP files OK"
 
       - name: Check syntax — theme
-        run: find themes/${{ env.THEME_SLUG }} -name "*.php" -exec php -l {} \; | grep -v "No syntax errors"
-        continue-on-error: false
+        run: |
+          ERRORS=0
+          while IFS= read -r file; do
+            if ! php -l "$file" > /dev/null 2>&1; then
+              php -l "$file"
+              ERRORS=$((ERRORS + 1))
+            fi
+          done < <(find themes/${{ env.THEME_SLUG }} -name "*.php")
+          if [ $ERRORS -gt 0 ]; then
+            echo "::error::$ERRORS PHP syntax error(s) found in theme"
+            exit 1
+          fi
+          echo "Theme: all PHP files OK"
 
-  # ── 2. Build — stage for WP.com + produce versioned ZIPs ─────────────────
+  # ── 2. Build ───────────────────────────────────────────────────────────────
   build:
     name: Build Packages
     runs-on: ubuntu-latest
     needs: lint
+    outputs:
+      plugin_ver: ${{ steps.plugin_ver.outputs.version }}
+      theme_ver:  ${{ steps.theme_ver.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -54,20 +74,21 @@ jobs:
       - name: Read plugin version
         id: plugin_ver
         run: |
-          VER=$(grep "define( 'VICINITY_VERSION'" plugins/${{ env.PLUGIN_SLUG }}/vicinity-plugin.php \
-                | grep -oP "'\K[0-9]+\.[0-9]+\.[0-9]+")
+          VER=$(grep -oP "define\(\s*'VICINITY_VERSION',\s*'\K[0-9]+\.[0-9]+\.[0-9]+" \
+                plugins/${{ env.PLUGIN_SLUG }}/vicinity-plugin.php || echo "0.0.0")
           echo "version=$VER" >> $GITHUB_OUTPUT
+          echo "Plugin version: $VER"
 
       - name: Read theme version
         id: theme_ver
         run: |
-          VER=$(grep "^Version:" themes/${{ env.THEME_SLUG }}/style.css \
-                | grep -oP "[0-9]+\.[0-9]+\.[0-9]+")
+          VER=$(grep -oP "^Version:\s*\K[0-9]+\.[0-9]+\.[0-9]+" \
+                themes/${{ env.THEME_SLUG }}/style.css || echo "0.0.0")
           echo "version=$VER" >> $GITHUB_OUTPUT
+          echo "Theme version: $VER"
 
-      # ── Stage for WordPress.com ──────────────────────────────────────────
-      # WP.com Advanced mode downloads the artifact named "wpcom" and unpacks
-      # it into wp-content/. Mirror that structure here.
+      # Stage for WordPress.com — artifact must be named "wpcom"
+      # WP.com Advanced mode unpacks this into wp-content/
       - name: Stage wpcom artifact
         run: |
           mkdir -p wpcom/plugins wpcom/themes
@@ -81,7 +102,7 @@ jobs:
           path: wpcom/
           retention-days: 7
 
-      # ── Versioned ZIPs (kept for releases / manual installs) ─────────────
+      # Versioned ZIPs for manual installs and GitHub Releases
       - name: Zip plugin
         run: |
           cd plugins
@@ -103,18 +124,12 @@ jobs:
             vicinity-theme-v*.zip
           retention-days: 30
 
-  # ── 3. Deploy via WordPress.com GitHub Integration ────────────────────────
-  # Requires the repo to be connected in:
-  #   WP.com Dashboard → Hosting → GitHub Deployments (Advanced mode)
-  # ─────────────────────────────────────────────────────────────────────────
+  # ── 3. Deploy ──────────────────────────────────────────────────────────────
   deploy:
     name: Trigger WP.com Deployment
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Trigger WordPress.com deployment
         run: |
           curl -s -X POST \
@@ -123,12 +138,10 @@ jobs:
             "https://public-api.wordpress.com/wpcom/v2/sites/${{ env.WPCOM_SITE }}/hosting/github-deployments/deploy" \
             -d '{"ref":"main"}' \
             | tee /tmp/deploy_response.json
-
-          STATUS=$(cat /tmp/deploy_response.json | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','unknown'))" 2>/dev/null || echo "sent")
+          STATUS=$(python3 -c "import sys,json; d=json.load(open('/tmp/deploy_response.json')); print(d.get('status','unknown'))" 2>/dev/null || echo "sent")
           echo "Deploy status: $STATUS"
 
-  # ── 4. Create GitHub Release on version tag ───────────────────────────────
-  # Push a tag like v3.1.0 to trigger a release with ZIPs attached.
+  # ── 4. Release (on version tag) ────────────────────────────────────────────
   release:
     name: GitHub Release
     runs-on: ubuntu-latest
@@ -138,7 +151,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download build artifacts
+      - name: Download versioned ZIPs
         uses: actions/download-artifact@v4
         with:
           name: vicinity-packages-v${{ needs.build.outputs.plugin_ver }}
