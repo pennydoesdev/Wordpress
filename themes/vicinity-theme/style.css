@@ -1,0 +1,276 @@
+/*
+Theme Name:  Vicinity
+Theme URI:   https://pennytribune.com
+Description: Penny Tribune editorial theme — newsroom-ready newsroom design. Zilla Slab headlines, Georgia body text, Libre Franklin UI. Rule-based layouts, dense information hierarchy, editorial typography.
+Version:     3.1.1
+Author:      Penny Tribune Systems
+Author URI:  https://pennytribune.com
+Text Domain: apollo
+License:     Proprietary
+
+Tags: news, editorial, magazine, newspaper, nyt-style, custom-post-types, video, podcast
+*/
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DESIGN TOKENS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Typography ───────────────────────────────────────────────────────── */
+  --font-headline: 'Zilla Slab', Georgia, 'Times New Roman', serif;
+  --font-body:     Georgia, 'Times New Roman', serif;
+  --font-ui:       'Libre Franklin', 'Franklin Gothic Medium', Arial, sans-serif;
+  --font-mono:     'Courier New', Courier, monospace;
+
+  /* ── Color palette ────────────────────────────────────────────────────── */
+  --color-ink:           #121212;   /* Primary text, near-black */
+  --color-ink-muted:     #6B6B6B;   /* Secondary text */
+  --color-ink-faint:     #999999;   /* Timestamps, meta */
+  --color-ink-inverse:   #FFFFFF;   /* Text on dark backgrounds */
+
+  --color-bg:            #FFFFFF;   /* Page background */
+  --color-bg-alt:        #F7F7F7;   /* Section backgrounds, wells */
+  --color-bg-dark:       #121212;   /* Dark sections, footer top */
+  --color-bg-mid:        #1A1A1A;   /* Dark nav */
+
+  --color-rule:          #E2E2E2;   /* Light rule lines (between items) */
+  --color-rule-strong:   #000000;   /* Section dividers */
+  --color-rule-mid:      #DFDFDF;   /* Medium weight rules */
+
+  --color-accent:        #326891;   /* NYT blue — links, interactive */
+  --color-accent-hover:  #1A4670;   /* Link hover */
+  --color-breaking:      #C62828;   /* Breaking news, alerts */
+  --color-secondary:     #D92E7F;   /* Secondary accent */
+
+  /* ── Spacing (8px base unit) ─────────────────────────────────────────── */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-7: 32px;
+  --sp-8: 40px;
+  --sp-9: 48px;
+  --sp-10: 64px;
+
+  /* ── Typography scale ────────────────────────────────────────────────── */
+  --text-xs:    0.75rem;    /* 12px */
+  --text-sm:    0.875rem;   /* 14px */
+  --text-base:  1rem;       /* 16px */
+  --text-lg:    1.125rem;   /* 18px */
+  --text-xl:    1.5rem;     /* 24px */
+  --text-2xl:   2rem;       /* 32px */
+  --text-3xl:   2.5rem;     /* 40px */
+  --text-4xl:   3rem;       /* 48px */
+
+  /* ── Line heights ───────────────────────────────────────────────────── */
+  --lh-tight:   1.2;
+  --lh-body:    1.6;
+  --lh-loose:   1.8;
+
+  /* ── Layout ──────────────────────────────────────────────────────────── */
+  --max-w-article: 680px;
+  --max-w-site:    1280px;
+  --container-width: 1280px;
+
+  /* ── Borders ─────────────────────────────────────────────────────────── */
+  --border-radius: 2px;
+  --border-width:  1px;
+
+  /* ── Shadows (light, subtle) ─────────────────────────────────────────── */
+  --shadow-sm:     0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md:     0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-lg:     0 8px 16px rgba(0, 0, 0, 0.12);
+
+  /* ── Transitions ─────────────────────────────────────────────────────── */
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --duration-slow: 300ms;
+  --ease-in-out:   cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESET
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: var(--lh-body);
+  color: var(--color-ink);
+  background-color: var(--color-bg);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-headline);
+  line-height: var(--lh-tight);
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+h1 { font-size: var(--text-4xl); }
+h2 { font-size: var(--text-3xl); }
+h3 { font-size: var(--text-2xl); }
+h4 { font-size: var(--text-xl); }
+h5 { font-size: var(--text-lg); }
+h6 { font-size: var(--text-base); font-weight: 600; }
+
+p {
+  margin: 0 0 var(--sp-4) 0;
+  line-height: var(--lh-body);
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease-in-out);
+}
+
+a:hover {
+  color: var(--color-accent-hover);
+  text-decoration: underline;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+ul, ol {
+  margin: 0 0 var(--sp-4) var(--sp-4);
+  padding: 0;
+}
+
+li {
+  margin-bottom: var(--sp-2);
+}
+
+blockquote {
+  margin: var(--sp-4) 0;
+  padding: 0 0 0 var(--sp-4);
+  border-left: 3px solid var(--color-rule-strong);
+  color: var(--color-ink-muted);
+  font-style: italic;
+}
+
+code, pre {
+  font-family: var(--font-mono);
+  background-color: var(--color-bg-alt);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--border-radius);
+  overflow-x: auto;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LAYOUT
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.container {
+  max-width: var(--max-w-site);
+  margin: 0 auto;
+  padding: 0 var(--sp-4);
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 var(--sp-3);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BUTTONS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.btn {
+  display: inline-block;
+  padding: var(--sp-3) var(--sp-4);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  background-color: var(--color-bg-alt);
+  color: var(--color-ink);
+  border: 1px solid var(--color-rule-mid);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-in-out);
+}
+
+.btn:hover {
+  background-color: var(--color-ink);
+  color: var(--color-bg);
+  border-color: var(--color-ink);
+  text-decoration: none;
+}
+
+.btn--primary {
+  background-color: var(--color-accent);
+  color: var(--color-ink-inverse);
+  border-color: var(--color-accent);
+}
+
+.btn--primary:hover {
+  background-color: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   UTILITY CLASSES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Print styles */
+@media print {
+  body {
+    color: #000;
+    background: #fff;
+  }
+  a {
+    text-decoration: underline;
+  }
+  .no-print {
+    display: none;
+  }
+}
