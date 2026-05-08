@@ -14,8 +14,8 @@ on:
 # All secrets are stored in: GitHub repo → Settings → Secrets → Actions
 # ─────────────────────────────────────────────────────────────────────────────
 env:
-  PLUGIN_SLUG: apollo-plugin
-  THEME_SLUG:  apollo-theme
+  PLUGIN_SLUG: vicinity-plugin
+  THEME_SLUG:  vicinity-theme
   WPCOM_SITE:  ${{ secrets.WPCOM_SITE_SLUG }}   # e.g. pennytribune
 
 jobs:
@@ -54,7 +54,7 @@ jobs:
       - name: Read plugin version
         id: plugin_ver
         run: |
-          VER=$(grep "define( 'APOLLO_VERSION'" plugins/${{ env.PLUGIN_SLUG }}/apollo-plugin.php \
+          VER=$(grep "define( 'VICINITY_VERSION'" plugins/${{ env.PLUGIN_SLUG }}/vicinity-plugin.php \
                 | grep -oP "'\K[0-9]+\.[0-9]+\.[0-9]+")
           echo "version=$VER" >> $GITHUB_OUTPUT
 
