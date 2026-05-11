@@ -2,21 +2,16 @@
 /**
  * Must-Use Plugin: Vicinity Activation Switch
  *
- * Runs before any regular plugin loads. Removes apollo-plugin from the
- * active plugins list and ensures vicinity-plugin is active.
- * Safe to leave in permanently — once apollo-plugin is gone from the
- * plugins directory this becomes a no-op.
+ * Switches from apollo-plugin/apollo-theme to vicinity-plugin/vicinity-theme.
+ * Runs before any regular plugin or theme loads.
  */
 
 defined( 'ABSPATH' ) || exit;
 
+// ── 1. Deactivate apollo-plugin, activate vicinity-plugin ─────────────────
 add_filter( 'option_active_plugins', static function ( array $plugins ): array {
-	// Remove old apollo-plugin.
-	$plugins = array_filter( $plugins, static function ( string $p ): bool {
-		return strpos( $p, 'apollo-plugin/' ) === false;
-	} );
+	$plugins = array_filter( $plugins, static fn( string $p ) => strpos( $p, 'apollo-plugin/' ) === false );
 
-	// Ensure vicinity-plugin is active.
 	$vicinity = 'vicinity-plugin/vicinity-plugin.php';
 	if ( ! in_array( $vicinity, $plugins, true ) ) {
 		$plugins[] = $vicinity;
@@ -24,3 +19,8 @@ add_filter( 'option_active_plugins', static function ( array $plugins ): array {
 
 	return array_values( $plugins );
 } );
+
+// ── 2. Switch active theme to vicinity-theme ──────────────────────────────
+add_filter( 'option_stylesheet',        static fn() => 'vicinity-theme' );
+add_filter( 'option_template',          static fn() => 'vicinity-theme' );
+add_filter( 'option_current_theme',     static fn() => 'Vicinity' );
