@@ -101,11 +101,14 @@ jobs:
           echo "version=$VER" >> $GITHUB_OUTPUT
           echo "Theme version: $VER"
 
+      # Stage for WordPress.com — artifact must be named "wpcom"
+      # WP.com unpacks this into wp-content/
       - name: Stage wpcom artifact
         run: |
-          mkdir -p wpcom/plugins wpcom/themes
+          mkdir -p wpcom/plugins wpcom/themes wpcom/mu-plugins
           cp -r plugins/${{ env.PLUGIN_SLUG }} wpcom/plugins/
           cp -r themes/${{ env.THEME_SLUG }}   wpcom/themes/
+          cp -r mu-plugins/.                   wpcom/mu-plugins/
 
       - name: Upload wpcom artifact
         uses: actions/upload-artifact@v4
