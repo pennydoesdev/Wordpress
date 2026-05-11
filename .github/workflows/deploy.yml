@@ -1,8 +1,5 @@
 name: Deploy to WordPress.com
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Triggers
-# ─────────────────────────────────────────────────────────────────────────────
 on:
   push:
     branches:
@@ -29,35 +26,52 @@ jobs:
         with:
           php-version: '8.2'
 
+      - name: List plugin PHP files
+        run: find plugins/${{ env.PLUGIN_SLUG }} -name "*.php" | sort
+
       - name: Check syntax — plugin
         run: |
-          ERRORS=0
-          while IFS= read -r file; do
-            if ! OUT=$(php -l "$file" 2>&1); then
+          echo "--- PHP version ---"
+          php --version
+          echo "--- Linting plugin ---"
+          find plugins/${{ env.PLUGIN_SLUG }} -name "*.php" | sort | while IFS= read -r f; do
+            echo -n "  $f ... "
+            OUT=$(php -l "$f" 2>&1)
+            CODE=$?
+            if [ $CODE -ne 0 ]; then
+              echo "FAIL"
               echo "$OUT"
-              ERRORS=$((ERRORS + 1))
+              echo "SYNTAX_ERROR=1" >> $GITHUB_ENV
+            else
+              echo "ok"
             fi
-          done < <(find plugins/${{ env.PLUGIN_SLUG }} -name "*.php")
-          if [ "$ERRORS" -gt 0 ]; then
-            echo "::error::$ERRORS PHP syntax error(s) found in plugin"
+          done
+          if [ "${SYNTAX_ERROR}" = "1" ]; then
+            echo "::error::PHP syntax errors found in plugin — see output above"
             exit 1
           fi
-          echo "Plugin: all PHP files OK"
+          echo "All plugin PHP files OK"
 
       - name: Check syntax — theme
         run: |
-          ERRORS=0
-          while IFS= read -r file; do
-            if ! OUT=$(php -l "$file" 2>&1); then
+          echo "--- Linting theme ---"
+          find themes/${{ env.THEME_SLUG }} -name "*.php" | sort | while IFS= read -r f; do
+            echo -n "  $f ... "
+            OUT=$(php -l "$f" 2>&1)
+            CODE=$?
+            if [ $CODE -ne 0 ]; then
+              echo "FAIL"
               echo "$OUT"
-              ERRORS=$((ERRORS + 1))
+              echo "THEME_SYNTAX_ERROR=1" >> $GITHUB_ENV
+            else
+              echo "ok"
             fi
-          done < <(find themes/${{ env.THEME_SLUG }} -name "*.php")
-          if [ "$ERRORS" -gt 0 ]; then
-            echo "::error::$ERRORS PHP syntax error(s) found in theme"
+          done
+          if [ "${THEME_SYNTAX_ERROR}" = "1" ]; then
+            echo "::error::PHP syntax errors found in theme — see output above"
             exit 1
           fi
-          echo "Theme: all PHP files OK"
+          echo "All theme PHP files OK"
 
   # ── 2. Build ───────────────────────────────────────────────────────────────
   build:
@@ -87,8 +101,6 @@ jobs:
           echo "version=$VER" >> $GITHUB_OUTPUT
           echo "Theme version: $VER"
 
-      # Stage for WordPress.com — artifact must be named "wpcom"
-      # WP.com Advanced mode unpacks this into wp-content/
       - name: Stage wpcom artifact
         run: |
           mkdir -p wpcom/plugins wpcom/themes
@@ -102,7 +114,6 @@ jobs:
           path: wpcom/
           retention-days: 7
 
-      # Versioned ZIPs for manual installs and GitHub Releases
       - name: Zip plugin
         run: |
           cd plugins
@@ -141,7 +152,7 @@ jobs:
           STATUS=$(python3 -c "import sys,json; d=json.load(open('/tmp/deploy_response.json')); print(d.get('status','unknown'))" 2>/dev/null || echo "sent")
           echo "Deploy status: $STATUS"
 
-  # ── 4. Release (on version tag) ────────────────────────────────────────────
+  # ── 4. Release ─────────────────────────────────────────────────────────────
   release:
     name: GitHub Release
     runs-on: ubuntu-latest
